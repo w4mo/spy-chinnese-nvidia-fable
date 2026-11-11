@@ -1,76 +1,76 @@
 # NVIDIA AI-1 Teardown
 
-Sıvı soğutmalı bir masaüstü yapay zekâ bilgisayarının tarayıcıda çalışan, etkileşimli 3D söküm simülatörü. React ve three.js ile yazıldı; model tamamen kodla üretiliyor, dışarıdan hiçbir 3D dosya ya da doku yüklenmiyor.
+An interactive 3D teardown simulator of a liquid-cooled desktop AI computer, running in the browser. Built with React and three.js; the model is generated entirely in code, with no 3D files or textures loaded from outside.
 
-![Çip incelemesi: ısı yayıcı kaldırılmış, detay paneli açık](docs/inspect-chip.png)
+![Chip inspection: heat spreader lifted, detail panel open](docs/inspect-chip.png)
 
-Açılışta 24 saniyelik bir söküm filmi oynar. Sahneye dokunduğunuz anda kontrol size geçer: kamerayı döndürebilir, parçalara tıklayıp yuvasından çıkarabilir ve her birinin özelliklerini canlı değerlerle inceleyebilirsiniz.
+A 24-second teardown film plays on load. The moment you touch the scene, control passes to you: orbit the camera, click parts to pull them out of the machine, and inspect each one with live readings.
 
-## Ekran görüntüleri
+## Screenshots
 
-| Film modu | Patlatılmış görünüm |
+| Film mode | Exploded view |
 | --- | --- |
-| ![Film modu, makine çalışırken](docs/film.png) | ![Patlatılmış görünüm](docs/exploded.png) |
+| ![Film mode with the machine running](docs/film.png) | ![Exploded view](docs/exploded.png) |
 
-## Kurulum
+## Getting started
 
-Node.js 20.19 veya üstü gerekir.
+Requires Node.js 20.19 or newer.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Ardından terminalde yazan adresi açın (varsayılan `http://localhost:5173`).
+Then open the address printed in the terminal (`http://localhost:5173` by default).
 
-| Komut | Ne yapar |
+| Command | What it does |
 | --- | --- |
-| `npm run dev` | Geliştirme sunucusunu başlatır |
-| `npm run build` | Tip kontrolü yapar ve `dist/` klasörüne derler |
-| `npm run preview` | Derlenmiş sürümü yerelde sunar |
+| `npm run dev` | Starts the development server |
+| `npm run build` | Type-checks and builds into `dist/` |
+| `npm run preview` | Serves the built version locally |
 
-## Kullanım
+## Controls
 
-| Eylem | Sonuç |
+| Action | Result |
 | --- | --- |
-| Sürükle | Kamerayı döndürür |
-| Tekerlek | Yakınlaştırır / uzaklaştırır |
-| Çift tıkla | Ana görünüme döner |
-| Parçaya tıkla | Parçayı çıkarır, kamerayı ona odaklar ve detay panelini açar |
-| Odaktaki parçaya tekrar tıkla | Parçayı yerine koyar |
-| Boş alana tıkla | Odağı kaldırır |
+| Drag | Orbits the camera |
+| Scroll | Zooms in and out |
+| Double-click | Returns to the home view |
+| Click a part | Pulls it out, focuses the camera on it and opens the detail panel |
+| Click the focused part again | Puts it back |
+| Click empty space | Clears the focus |
 
-Seçilebilen altı montaj grubu var: kapak, fanlar, soğutma sıvısı rezervuarı, radyatör, çip ve kablolar. Aynı anda birden fazlası dışarıda durabilir. İçerideki bir parça çıkarıldığında kapak ve fanlar yolu açmak için kendiliğinden kalkar.
+Six assemblies can be selected: lid, fans, coolant reservoir, radiator, chip and cables. Several can be out at the same time. When an inner part is pulled out, the lid and fans lift away on their own to clear the path.
 
-Sağdaki **ASSEMBLIES** butonları ve **SUBSYSTEMS** satırları aynı parçaları açıp kapatır; **EXPLODED VIEW** tüm makineyi ayırır, **POWER ON** gücü açıp kapatır. Sahnenin altındaki **RESET VIEW**, **REASSEMBLE** ve **PLAY FILM** butonları görünümü sıfırlar, makineyi toplar ve filme geri döner. Zaman çizelgesine tıklayarak filmin istediğiniz anına gidebilirsiniz.
+The **ASSEMBLIES** buttons and **SUBSYSTEMS** rows on the right toggle the same parts; **EXPLODED VIEW** separates the whole machine and **POWER ON** switches the power. The **RESET VIEW**, **REASSEMBLE** and **PLAY FILM** buttons below the scene reset the camera, put everything back and return to the film. Click the timeline to jump to any moment of the film.
 
-Soldaki göstergeler (fan devri, GPU sıcaklığı, çekirdek yükleri, güç tüketimi) makinenin o anki durumuna göre değişir. Değerler simülasyondur, gerçek bir ölçüme dayanmaz.
+The gauges on the left (fan speed, GPU temperature, core loads, power draw) follow the current state of the machine. The values are simulated and not based on real measurements.
 
-Filmi belirli bir saniyede duraklatılmış açmak için adrese `?t=` ekleyin, örneğin `http://localhost:5173/?t=14.6`.
+To open the film paused at a given second, add `?t=` to the address, for example `http://localhost:5173/?t=14.6`.
 
-## Nasıl çalışıyor
+## How it works
 
-- **Tek zaman kaynağı.** Film modunda her şey `t` saniyesinin saf bir fonksiyonu: parça konumları, kamera, göstergeler ve arayüz metinleri `src/timeline.ts` içinden hesaplanır.
-- **İki mod, yumuşak geçiş.** `film` modunu zaman çizelgesi, `inspect` modunu kullanıcı yönetir. İkisi her karede harmanlandığı için devralma sırasında kamera ya da parçalar sıçramaz.
-- **Prosedürel model.** Gövde, fanlar, borular, radyatör ve anakart three.js temel geometrilerinden kurulur; petek desen, logo ve ışık haleleri `CanvasTexture` ile çizilir.
-- **Etiketler.** 3D noktalara bağlı açıklamalar düz DOM öğeleridir ve her karede ekrana izdüşürülür.
+- **One source of time.** In film mode everything is a pure function of the second `t`: part positions, camera, gauges and interface text are all computed from `src/timeline.ts`.
+- **Two modes, smooth hand-off.** The timeline drives `film` mode and the user drives `inspect` mode. The two are blended every frame, so neither the camera nor the parts jump when you take over.
+- **Procedural model.** The case, fans, pipes, radiator and mainboard are built from three.js primitive geometries; the honeycomb pattern, logo and light halos are drawn with `CanvasTexture`.
+- **Callouts.** The labels attached to 3D points are plain DOM elements, projected onto the screen every frame.
 
 ```
 src/
-  timeline.ts        film sahneleri, parça kanalları, kamera yolu, gösterge değerleri
-  store.ts           zustand durumu: mod, çıkarılan parçalar, odak
-  live.ts            her karede güncellenen ortak değerler
+  timeline.ts        film beats, part channels, camera path, gauge values
+  store.ts           zustand state: mode, pulled parts, focus
+  live.ts            shared values updated every frame
   scene/
-    Scene.tsx        Canvas, ışıklar, kamera sürücüsü, fare kontrolleri
-    Machine.tsx      makinenin parçaları ve hareketleri
-    materials.ts     malzemeler ve çizilen dokular
-  hud/Hud.tsx        göstergeler, butonlar, detay paneli
-  styles.css         arayüz stilleri
+    Scene.tsx        canvas, lights, camera driver, mouse controls
+    Machine.tsx      the machine's parts and their motion
+    materials.ts     materials and drawn textures
+  hud/Hud.tsx        gauges, buttons, detail panel
+  styles.css         interface styles
 ```
 
-**Kullanılanlar:** Vite 8, React 19, TypeScript 7, three.js 0.187, @react-three/fiber 9, @react-three/drei 10, zustand 5.
+**Stack:** Vite 8, React 19, TypeScript 7, three.js 0.187, @react-three/fiber 9, @react-three/drei 10, zustand 5.
 
-## Notlar
+## Notes
 
-- Tasarım, [bu videodaki](https://x.com/0x_fokki/status/2119817143927587090) konseptten esinlenen bağımsız bir çalışmadır.
-- Resmî bir NVIDIA ürünü ya da projesi değildir ve NVIDIA ile bir bağlantısı yoktur. Makine kurgusaldır; logo elle çizilmiş stilize bir yorumdur.
+- The design is an independent piece inspired by the concept in [this video](https://x.com/0x_fokki/status/2119817143927587090).
+- This is not an official NVIDIA product or project and has no affiliation with NVIDIA. The machine is fictional; the logo is a hand-drawn, stylised interpretation.
