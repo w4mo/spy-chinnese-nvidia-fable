@@ -1,0 +1,905 @@
+/* The HUD is laid out on a 1280x720 reference: 1rem = 16px there and scales with the window. */
+:root {
+  --lime: #76b900;
+  --lime-hot: #8fdc00;
+  --ink: #17191a;
+  --dim: #9b9d9a;
+  --line: rgba(20, 24, 20, 0.08);
+  --bg: #f6f6f3;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  font-size: min(1.25vw, 2.2222vh);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--mono);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 55%, #fbfbf9 0%, var(--bg) 55%, #efefeb 100%);
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  touch-action: none;
+}
+.stage:active {
+  cursor: grabbing;
+}
+.stage.hovering {
+  cursor: pointer;
+}
+
+/* label that trails the pointer over a clickable part */
+.tip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  padding: 0.34rem 0.5rem;
+  background: #1c2019;
+  color: #eef7da;
+  border-radius: 0.14rem;
+  font-size: 0.4rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.tip.on {
+  opacity: 1;
+}
+.tip b {
+  font-size: 0.5rem;
+  color: var(--lime-hot);
+}
+
+/* ------------------------------------------------------------ HUD shell */
+
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  font-size: 0.5rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.dim {
+  color: var(--dim);
+}
+.tiny {
+  font-size: 0.44rem;
+}
+.row {
+  display: flex;
+  align-items: center;
+}
+.row.between {
+  justify-content: space-between;
+}
+.row.end {
+  align-items: flex-end;
+}
+.readout {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.readout b {
+  font-size: 0.62rem;
+}
+
+/* ------------------------------------------------------------ header */
+
+.brand {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 8rem;
+  height: 4.4rem;
+  background: var(--lime);
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding-left: 1.25rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+}
+.brand svg {
+  width: 1.9rem;
+  height: 1.9rem;
+}
+
+.title {
+  position: absolute;
+  left: 9.1rem;
+  top: 1rem;
+}
+.title small {
+  font-size: 0.44rem;
+  color: var(--dim);
+  letter-spacing: 0.2em;
+}
+.title h1 {
+  margin: 0.15rem 0 0.2rem;
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 1.86rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.title h1 i {
+  color: var(--lime);
+  font-weight: 500;
+  font-style: normal;
+}
+.title p {
+  margin: 0;
+  font-size: 0.56rem;
+  letter-spacing: 0.22em;
+  color: #6f716e;
+}
+
+.draw {
+  position: absolute;
+  left: 35rem;
+  top: 1.1rem;
+  width: 17rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+.draw b {
+  font-size: 0.5rem;
+}
+
+.segs {
+  display: flex;
+  gap: 0.12rem;
+}
+.segs i {
+  flex: 1;
+  height: 0.62rem;
+  background: rgba(20, 24, 20, 0.09);
+  transition: background 0.18s;
+}
+.segs i.on {
+  background: var(--ink);
+}
+.segs.tall {
+  width: 7.4rem;
+  gap: 0.16rem;
+}
+.segs.tall i {
+  height: 1rem;
+  border-radius: 0.06rem;
+}
+
+.meta {
+  position: absolute;
+  right: 1.25rem;
+  top: 1.1rem;
+  margin: 0;
+  display: flex;
+}
+.meta > div {
+  padding: 0 1.2rem;
+  border-left: 1px solid var(--line);
+  min-width: 5.9rem;
+}
+.meta > div:first-child {
+  border-left: 0;
+}
+.meta > div:last-child {
+  padding-right: 0.2rem;
+}
+.meta dt {
+  font-size: 0.44rem;
+  color: var(--dim);
+  margin-bottom: 0.55rem;
+}
+.meta dd {
+  margin: 0;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+.led {
+  display: inline-block;
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 50%;
+  background: var(--ink);
+  margin-right: 0.45rem;
+  vertical-align: 0.08rem;
+}
+.led.lime {
+  background: var(--lime);
+}
+
+.plus-grid {
+  position: absolute;
+  left: 31.9rem;
+  top: 4rem;
+  width: 16.8rem;
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  row-gap: 0.42rem;
+  color: var(--lime);
+  font-size: 0.7rem;
+  letter-spacing: 0;
+  opacity: 0.75;
+}
+.plus-grid i {
+  font-style: normal;
+  line-height: 1;
+}
+
+/* ------------------------------------------------------------ cards */
+
+.col {
+  position: absolute;
+  top: 5.4rem;
+  width: 14.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.col.left {
+  left: 1.25rem;
+}
+.col.right-col {
+  right: 1.25rem;
+}
+
+.card {
+  pointer-events: auto;
+  padding: 0.62rem 0.68rem 0.66rem;
+  background: rgba(255, 255, 255, 0.62);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid rgba(20, 24, 20, 0.06);
+  border-radius: 0.22rem;
+  box-shadow: 0 0.12rem 0.7rem rgba(30, 36, 24, 0.05);
+}
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.48rem;
+  color: var(--dim);
+  font-size: 0.44rem;
+}
+.card-head h2 {
+  margin: 0;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+  padding-left: 0.55rem;
+  border-left: 0.16rem solid var(--lime);
+  line-height: 1;
+}
+
+.big {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.66rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: none;
+  margin-bottom: 0.28rem;
+  font-variant-numeric: tabular-nums;
+}
+.big small {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: #7c7e7b;
+  margin-left: 0.22rem;
+  letter-spacing: 0;
+}
+
+.trace {
+  margin-top: 0.5rem;
+}
+.trace svg {
+  display: block;
+  width: 100%;
+  height: 3.9rem;
+  overflow: visible;
+}
+.trace-mid {
+  stroke: rgba(20, 24, 20, 0.1);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.trace-now {
+  stroke: #5b5d5a;
+  stroke-width: 1;
+  stroke-dasharray: 1.5 2.5;
+  vector-effect: non-scaling-stroke;
+}
+.trace-wave {
+  fill: none;
+  stroke: var(--lime);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.trace-dot {
+  fill: var(--lime);
+}
+.trace-axis {
+  display: flex;
+  justify-content: space-between;
+  padding-right: 0.5rem;
+  margin-top: 0.2rem;
+  font-size: 0.38rem;
+  color: var(--dim);
+}
+
+.meter {
+  height: 0.2rem;
+  margin: 0.95rem 0 0.35rem;
+  background: rgba(20, 24, 20, 0.08);
+  border-radius: 0.2rem;
+}
+.meter i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  border-radius: 0.2rem;
+  transition: width 0.2s linear;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.16rem 0.3rem 0.14rem;
+  border-radius: 0.12rem;
+  font-size: 0.38rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1;
+}
+.chip.ghost {
+  background: rgba(20, 24, 20, 0.07);
+  color: var(--dim);
+}
+.chip.solid {
+  background: #262b23;
+  color: #e9f6cf;
+}
+.chip.lime {
+  background: var(--lime);
+  color: #101400;
+}
+
+.cores ul {
+  list-style: none;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.47rem;
+  line-height: 1;
+}
+.cores li {
+  display: grid;
+  grid-template-columns: 1.7rem 1fr 2.3rem;
+  align-items: center;
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+}
+.cores li b {
+  font-weight: 700;
+}
+.cores li em {
+  font-style: normal;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.bar {
+  height: 0.24rem;
+  background: rgba(20, 24, 20, 0.07);
+  border-radius: 0.2rem;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  min-width: 0.1rem;
+  background: var(--ink);
+  border-radius: 0.2rem;
+  transition:
+    width 0.12s linear,
+    background 0.2s;
+}
+.bar i.hot {
+  background: var(--lime);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 0.55rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+.pair div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.44rem;
+}
+.pair b {
+  font-size: 0.54rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.36rem;
+}
+.buttons button {
+  font: inherit;
+  font-size: 0.44rem;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  color: var(--ink);
+  padding: 0.3rem 0.42rem 0.27rem;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(20, 24, 20, 0.16);
+  border-radius: 0.14rem;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.buttons button:hover {
+  border-color: var(--lime);
+}
+.buttons button.active {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: #0f1400;
+  font-weight: 700;
+}
+
+.subs ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.subs li {
+  display: grid;
+  grid-template-columns: 1.3rem 1fr auto;
+  align-items: center;
+  padding: 0.24rem 0 0.24rem 0.4rem;
+  line-height: 1;
+  margin-left: -0.4rem;
+  border-left: 0.12rem solid transparent;
+  font-size: 0.42rem;
+  cursor: pointer;
+}
+.subs li div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  overflow: hidden;
+}
+.subs li b {
+  font-size: 0.47rem;
+  letter-spacing: 0.18em;
+}
+.subs li small {
+  font-size: 0.36rem;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.subs li.open {
+  border-left-color: var(--lime);
+}
+.subs li.open b {
+  color: var(--lime);
+}
+
+/* ------------------------------------------------------------ stage labels */
+
+.stage-label {
+  position: absolute;
+  top: 6.15rem;
+  font-size: 0.44rem;
+  color: var(--dim);
+  letter-spacing: 0.24em;
+}
+.stage-label.tl {
+  left: 17.3rem;
+}
+.stage-label.tr {
+  right: 17.3rem;
+}
+.corner {
+  position: absolute;
+  width: 2.8rem;
+  height: 2.8rem;
+  opacity: 0.55;
+}
+.corner.c1 {
+  left: 17.3rem;
+  top: 7rem;
+  border-left: 1px dashed var(--lime);
+  border-top: 1px dashed var(--lime);
+}
+.corner.c2 {
+  right: 16.9rem;
+  bottom: 8rem;
+  border-right: 1px dashed var(--lime);
+  border-bottom: 1px dashed var(--lime);
+}
+
+.mode {
+  position: absolute;
+  left: 17.3rem;
+  bottom: 8.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.44rem;
+  letter-spacing: 0.24em;
+}
+.mode strong {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.62rem;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--lime);
+  animation: mode-in 0.45s ease-out both;
+}
+@keyframes mode-in {
+  from {
+    opacity: 0;
+    filter: blur(0.5rem);
+    transform: translateX(-0.4rem);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------------ inspection */
+
+.buttons button.focus {
+  box-shadow: 0 0 0 0.1rem rgba(118, 185, 0, 0.35);
+}
+
+.detail {
+  position: absolute;
+  left: 17.3rem;
+  top: 8.4rem;
+  width: 12.6rem;
+  text-transform: uppercase;
+  animation: mode-in 0.3s ease-out both;
+}
+.detail h3 {
+  margin: 0.1rem 0 0.4rem;
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 1.3rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.detail p {
+  margin: 0 0 0.6rem;
+  font-size: 0.46rem;
+  line-height: 1.55;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  color: #5f615e;
+}
+.detail dl {
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+.detail dl div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.34rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.44rem;
+}
+.detail dt {
+  color: var(--dim);
+  white-space: nowrap;
+}
+.detail dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.detail .live dd {
+  color: var(--lime);
+}
+.detail .x {
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 0.6;
+  padding: 0.1rem 0.2rem;
+  border: 0;
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+}
+.detail .x:hover {
+  color: var(--ink);
+}
+.detail .wide,
+.tools button {
+  font: inherit;
+  font-size: 0.44rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--ink);
+  padding: 0.36rem 0.55rem 0.32rem;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(20, 24, 20, 0.16);
+  border-radius: 0.14rem;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.detail .wide {
+  width: 100%;
+  margin-top: 0.65rem;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #f1f8e2;
+}
+.detail .wide:hover {
+  background: #2c3226;
+}
+.tools button:hover {
+  border-color: var(--lime);
+}
+
+.tools {
+  position: absolute;
+  right: 17.3rem;
+  bottom: 8.7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  font-size: 0.4rem;
+  letter-spacing: 0.2em;
+  white-space: pre;
+}
+.tools div {
+  display: flex;
+  gap: 0.35rem;
+}
+
+/* ------------------------------------------------------------ operation log */
+
+.log {
+  position: absolute;
+  left: 16.6rem;
+  right: 16.6rem;
+  bottom: 2.2rem;
+  display: grid;
+  grid-template-columns: 2.3rem 1fr;
+  grid-template-rows: auto 1fr;
+  column-gap: 0.8rem;
+}
+.log .card-head {
+  grid-column: 1 / -1;
+  margin-bottom: 0.3rem;
+}
+.play {
+  pointer-events: auto;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lime);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 0.12s;
+}
+.play:hover {
+  transform: scale(1.06);
+}
+.play svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: #101400;
+}
+.log-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.3rem;
+  padding-right: 0.3rem;
+}
+.caption {
+  color: var(--lime);
+  font-weight: 700;
+  font-size: 0.47rem;
+  letter-spacing: 0.2em;
+  animation: mode-in 0.35s ease-out both;
+}
+
+.track {
+  position: relative;
+  height: 1rem;
+  cursor: pointer;
+  touch-action: none;
+}
+.track-line,
+.track-fill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 0.1rem;
+  margin-top: -0.05rem;
+}
+.track-line {
+  right: 0;
+  background: rgba(20, 24, 20, 0.1);
+}
+.track-fill {
+  background: var(--lime);
+  height: 0.16rem;
+  margin-top: -0.08rem;
+}
+.track-tick {
+  position: absolute;
+  top: 0.22rem;
+  width: 0.1rem;
+  height: 0.56rem;
+  margin-left: -0.05rem;
+  background: #a9aba7;
+}
+.track-tick.done {
+  background: var(--lime);
+}
+.track-knob {
+  position: absolute;
+  top: 50%;
+  width: 0.72rem;
+  height: 0.72rem;
+  margin: -0.36rem 0 0 -0.36rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 0.14rem solid var(--lime);
+}
+
+/* ------------------------------------------------------------ footer */
+
+.foot {
+  position: absolute;
+  bottom: 0.65rem;
+  font-size: 0.42rem;
+  color: var(--dim);
+  letter-spacing: 0.26em;
+}
+.foot.fl {
+  left: 1.4rem;
+}
+.foot.fr {
+  right: 1.4rem;
+}
+.foot i {
+  color: var(--lime);
+  font-style: normal;
+  letter-spacing: 0.05em;
+}
+
+/* ------------------------------------------------------------ 3D callouts */
+
+#callouts {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* A zero-size point moved to the projected anchor; dot, leader and label hang off it. */
+.callout {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  will-change: transform;
+}
+.callout.left {
+  flex-direction: row-reverse;
+}
+.callout-dot {
+  width: 0.26rem;
+  height: 0.26rem;
+  border-radius: 50%;
+  background: var(--lime);
+  flex: none;
+  margin: 0 -0.13rem;
+}
+.callout-line {
+  height: 1px;
+  background: var(--lime);
+  opacity: 0.8;
+  flex: none;
+}
+.callout-label {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.24rem;
+  padding: 0.3rem 0.5rem 0.3rem 0.4rem;
+  background: rgba(250, 250, 247, 0.72);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border-radius: 0.12rem;
+}
+.callout-label b {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+}
+.callout-label b i {
+  width: 0.3rem;
+  height: 0.3rem;
+  background: var(--lime);
+}
+.callout-label small {
+  font-size: 0.4rem;
+  letter-spacing: 0.2em;
+  color: var(--dim);
+  padding-left: 0.7rem;
+}
